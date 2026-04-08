@@ -2,33 +2,39 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { generateOtp, sendOtp } from '../lib/otp.js'
 import { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken } from '../lib/jwt.js'
+import { verifyGoogleToken } from '../lib/google.js'
 
 const OTP_TTL = 300
 const otpKey = (phone: string) => `otp:${phone}`
 const attemptsKey = (phone: string) => `otp_attempts:${phone}`
 
-const SendOtpBody    = z.object({ phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number') })
-const VerifyOtpBody  = z.object({ phone: z.string().regex(/^[6-9]\d{9}$/), otp: z.string().length(6) })
-const RegisterBody   = z.object({
-  name: z.string().min(2).max(100),
-  role: z.enum(['shipper', 'driver', 'fleet_owner']),
+const phoneSchema = z.string().refine(
+  v => /^[6-9]\d{9}$/.test(v) || v === '+14782159223' || v === '+18777804236',
+  'Invalid Indian mobile number'
+)
+const SdendOtpBody   = z.object({ phone: phoneSchema })
+const VerifyOtpBody = z.object({ phone: phoneSchema, otp: z.string().length(6) })
+const RegisterBody  = z.object({
+  full_name: z.string().min(2).max(100).optional(),
+  name: z.string().min(2).max(100).optional(),
+  role: z.enum(['shipper', 'driver']),
   email: z.string().email().optional(),
-  company_name: z.string().optional(),
-  gst_number: z.string().optional(),
-  vehicle_type: z.enum(['mini_truck', 'lcv', 'hcv', 'trailer']).optional(),
-  vehicle_number: z.string().optional(),
-})
+  // driver fields
+  truck_number: z.string().optional(),
+  truck_type: z.string().optional(),
+  license_number: z.string().optional(),
+}).refine(d => d.full_name || d.name, { message: 'full_name is required' })
 
 export async function authRoutes(app: FastifyInstance) {
 
   // POST /auth/send-otp
   app.post('/send-otp', async (req, reply) => {
-    const body = SendOtpBody.safeParse(req.body)
+    const body = SdendOtpBody.safeParse(req.body)
     if (!body.success) return reply.status(400).send({ success: false, error: body.error.errors[0].message })
     const { phone } = body.data
     const attempts = await app.redis.incr(attemptsKey(phone))
     if (attempts === 1) await app.redis.expire(attemptsKey(phone), 3600)
-    if (attempts > 5) return reply.status(429).send({ success: false, error: 'Too many requests. Try after 1 hour.' })
+    if (process.env.NODE_ENV !== 'development' && attempts > 5) return reply.status(429).send({ success: false, error: 'Too many requests. Try after 1 hour.' })
     const otp = generateOtp()
     await app.redis.setex(otpKey(phone), OTP_TTL, otp)
     await sendOtp(phone, otp)
@@ -44,15 +50,17 @@ export async function authRoutes(app: FastifyInstance) {
     if (!stored || stored !== otp) return reply.status(401).send({ success: false, error: 'Invalid or expired OTP' })
     await app.redis.del(otpKey(phone))
 
-    const { data: existing } = await app.supabase.from('users').select('*').eq('phone', phone).maybeSingle()
+    const { data: existing } = await app.supabase
+      .from('users').select('*').eq('phone_number', phone).maybeSingle()
     let user = existing
     if (!user) {
-      const { data: created, error } = await app.supabase.from('users').insert({ phone, role: 'shipper' }).select().single()
+      const { data: created, error } = await app.supabase
+        .from('users').insert({ phone_number: phone, role: 'shipper' }).select().single()
       if (error || !created) return reply.status(500).send({ success: false, error: 'Failed to create user' })
       user = created
     }
 
-    const payload = { userId: user.id, phone: user.phone, role: user.role }
+    const payload = { userId: user.id, phone: user.phone_number, role: user.role }
     const accessToken = signAccessToken(payload)
     const refreshToken = signRefreshToken(payload)
     await app.redis.setex(`refresh:${user.id}`, 7 * 86400, refreshToken)
@@ -77,7 +85,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
   })
 
-  // POST /auth/register
+  // POST /auth/register  — complete profile after first OTP verify
   app.post('/register', async (req, reply) => {
     const token = req.headers.authorization?.replace('Bearer ', '')
     if (!token) return reply.status(401).send({ success: false, error: 'Authorization required' })
@@ -86,17 +94,28 @@ export async function authRoutes(app: FastifyInstance) {
 
     const body = RegisterBody.safeParse(req.body)
     if (!body.success) return reply.status(400).send({ success: false, error: body.error.errors[0].message })
-    const { name, role, email, company_name, gst_number, vehicle_type, vehicle_number } = body.data
+    const { role, email, truck_number, truck_type, license_number } = body.data
+    const full_name = body.data.full_name ?? body.data.name
 
-    await app.supabase.from('users').update({ role }).eq('id', jwtPayload.userId)
+    const { error: userErr } = await app.supabase
+      .from('users')
+      .update({ full_name, role, email })
+      .eq('id', jwtPayload.userId)
+    if (userErr) return reply.status(500).send({ success: false, error: 'Failed to update profile' })
 
-    if (role === 'shipper' || role === 'fleet_owner') {
-      await app.supabase.from('shipper_profiles').upsert({ user_id: jwtPayload.userId, name, email, company_name, gst_number })
-    }
     if (role === 'driver') {
-      await app.supabase.from('driver_profiles').upsert({ user_id: jwtPayload.userId, name, vehicle_type, vehicle_number })
+      await app.supabase.from('drivers').upsert({
+        user_id: jwtPayload.userId,
+        truck_number,
+        truck_type,
+        license_number,
+      })
     }
-    return reply.send({ success: true, data: { message: 'Profile registered' } })
+
+    const { data: user } = await app.supabase
+      .from('users').select('*, drivers(*)').eq('id', jwtPayload.userId).single()
+
+    return reply.send({ success: true, data: { user } })
   })
 
   // GET /auth/me
@@ -106,10 +125,68 @@ export async function authRoutes(app: FastifyInstance) {
     try {
       const { userId } = verifyAccessToken(token)
       const { data: user } = await app.supabase
-        .from('users').select('*, shipper_profiles(*), driver_profiles(*)').eq('id', userId).single()
+        .from('users').select('*, drivers(*)').eq('id', userId).single()
       if (!user) return reply.status(404).send({ success: false, error: 'User not found' })
       return reply.send({ success: true, data: { user } })
     } catch { return reply.status(401).send({ success: false, error: 'Invalid token' }) }
+  })
+
+  // POST /auth/google  — Sign In / Sign Up with Google
+  app.post('/google', async (req, reply) => {
+    const { id_token, role } = (req.body as any) ?? {}
+    if (!id_token) return reply.status(400).send({ success: false, error: 'id_token required' })
+
+    let googleUser
+    try {
+      googleUser = await verifyGoogleToken(id_token)
+    } catch {
+      return reply.status(401).send({ success: false, error: 'Invalid Google token' })
+    }
+
+    let { data: existing } = await app.supabase
+      .from('users').select('*, drivers(*)').eq('google_sub', googleUser.sub).maybeSingle()
+
+    if (!existing) {
+      const { data: byEmail } = await app.supabase
+        .from('users').select('*, drivers(*)').eq('email', googleUser.email).maybeSingle()
+      existing = byEmail
+    }
+
+    let user = existing
+    const isNewUser = !existing
+
+    if (isNewUser) {
+      const resolvedRole = role === 'driver' ? 'driver' : 'shipper'
+      const { data: created, error } = await app.supabase
+        .from('users')
+        .insert({
+          google_sub: googleUser.sub,
+          email: googleUser.email,
+          full_name: googleUser.name,
+          avatar_url: googleUser.picture,
+          role: resolvedRole,
+        })
+        .select('*, drivers(*)')
+        .single()
+      if (error || !created) return reply.status(500).send({ success: false, error: 'Failed to create user' })
+      user = created
+    } else if (!existing.google_sub) {
+      await app.supabase
+        .from('users')
+        .update({ google_sub: googleUser.sub, avatar_url: googleUser.picture, full_name: googleUser.name })
+        .eq('id', existing.id)
+      user = { ...existing, google_sub: googleUser.sub, avatar_url: googleUser.picture, full_name: googleUser.name }
+    }
+
+    const payload = { userId: user.id, phone: user.phone_number ?? undefined, role: user.role }
+    const accessToken = signAccessToken(payload)
+    const refreshToken = signRefreshToken(payload)
+    await app.redis.setex(`refresh:${user.id}`, 7 * 86400, refreshToken)
+
+    return reply.send({
+      success: true,
+      data: { access_token: accessToken, refresh_token: refreshToken, is_new_user: isNewUser, user },
+    })
   })
 
   // POST /auth/logout
