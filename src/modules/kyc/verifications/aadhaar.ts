@@ -1,7 +1,7 @@
 // Aadhaar eKYC via Surepass — two-step: initiate OTP to registered mobile, then verify OTP and receive masked Aadhaar data
 
-import { surepass } from '../../../lib/surepass'
-import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types'
+import { surepass } from '../../../lib/surepass.js'
+import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types.js'
 
 /**
  * Aadhaar eKYC — two-step via Surepass:

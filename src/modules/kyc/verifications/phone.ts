@@ -1,7 +1,7 @@
 // Wraps otp.ts OTP send/verify flow and maps the result to a KYCResult for phone number ownership verification
 
-import { generateOtp, sendOtp } from '../../../lib/otp'
-import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types'
+import { generateOtp, sendOtp } from '../../../lib/otp.js'
+import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types.js'
 
 /**
  * Phone verification — two-step:

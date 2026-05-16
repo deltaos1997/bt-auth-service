@@ -1,7 +1,7 @@
 // All Supabase reads/writes for the user_kyc table — upsert results, fetch current level, list pending reviews
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { KYCLevel, type KYCRecord, type KYCResult } from './types'
+import { KYCLevel, type KYCRecord, type KYCResult } from './types.js'
 
 const TABLE = 'user_kyc'
 

@@ -1,7 +1,7 @@
 // Vehicle RC verification via Vahan API — fetches registration details and stores permit/fitness/insurance expiry dates
 
-import { surepass } from '../../../lib/surepass'
-import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types'
+import { surepass } from '../../../lib/surepass.js'
+import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types.js'
 
 /**
  * Vehicle RC (Registration Certificate) verification via Surepass → Vahan API:

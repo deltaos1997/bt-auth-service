@@ -2,20 +2,20 @@
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
-import { verifyAccessToken } from '../lib/jwt'
-import { getCurrentLevel, getKYCRecord } from '../modules/kyc/repository'
-import { KYCStatus, KYCLevel, UserRole, type KYCRequest, type KYCResult } from '../modules/kyc/types'
+import { verifyAccessToken } from '../lib/jwt.js'
+import { getCurrentLevel, getKYCRecord } from '../modules/kyc/repository.js'
+import { KYCStatus, KYCLevel, UserRole, type KYCRequest, type KYCResult } from '../modules/kyc/types.js'
 
 // Verification handlers — each module is fully independent
-import { verifyPhone }     from '../modules/kyc/verifications/phone'
-import { verifyEmail }     from '../modules/kyc/verifications/email'
-import { verifyAadhaar }   from '../modules/kyc/verifications/aadhaar'
-import { verifyPan }       from '../modules/kyc/verifications/pan'
-import { verifyDl }        from '../modules/kyc/verifications/dl'
-import { verifyRc }        from '../modules/kyc/verifications/rc'
-import { verifyGst }       from '../modules/kyc/verifications/gst'
-import { verifyFaceMatch } from '../modules/kyc/verifications/face-match'
-import { verifyBank }      from '../modules/kyc/verifications/bank'
+import { verifyPhone }     from '../modules/kyc/verifications/phone.js'
+import { verifyEmail }     from '../modules/kyc/verifications/email.js'
+import { verifyAadhaar }   from '../modules/kyc/verifications/aadhaar.js'
+import { verifyPan }       from '../modules/kyc/verifications/pan.js'
+import { verifyDl }        from '../modules/kyc/verifications/dl.js'
+import { verifyRc }        from '../modules/kyc/verifications/rc.js'
+import { verifyGst }       from '../modules/kyc/verifications/gst.js'
+import { verifyFaceMatch } from '../modules/kyc/verifications/face-match.js'
+import { verifyBank }      from '../modules/kyc/verifications/bank.js'
 
 // ---------------------------------------------------------------------------
 // Verification dispatch map

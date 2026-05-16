@@ -15,12 +15,15 @@
 # ── Stage 1: production deps ──────────────────────────────────────────────────
 FROM node:20-alpine AS deps
 WORKDIR /app
+# bcrypt requires native compilation
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 # ── Stage 2: development (hot-reload via tsx watch) ───────────────────────────
 FROM node:20-alpine AS development
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY tsconfig.json ./
@@ -32,6 +35,7 @@ CMD ["node_modules/.bin/tsx", "watch", "src/index.ts"]
 # ── Stage 3: TypeScript compiler ──────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json tsconfig.json ./
 RUN npm ci
 COPY src ./src
@@ -43,6 +47,7 @@ WORKDIR /app
 COPY --from=deps    /app/node_modules ./node_modules
 COPY --from=builder /app/dist         ./dist
 COPY package.json ./
+COPY public ./public
 EXPOSE 3001
 ENV NODE_ENV=production
 USER node

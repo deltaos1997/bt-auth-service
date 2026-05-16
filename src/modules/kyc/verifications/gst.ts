@@ -1,7 +1,7 @@
 // GST number verification via Surepass — validates GSTIN and returns legal business name and registration status
 
-import { surepass } from '../../../lib/surepass'
-import { KYCLevel, KYCStatus, UserRole, type KYCRequest, type KYCResult } from '../types'
+import { surepass } from '../../../lib/surepass.js'
+import { KYCLevel, KYCStatus, UserRole, type KYCRequest, type KYCResult } from '../types.js'
 
 /**
  * GST verification — single-step via Surepass:

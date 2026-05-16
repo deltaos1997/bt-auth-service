@@ -1,7 +1,7 @@
 // PAN card verification via Surepass — validates PAN number, returns name and status from Income Tax database
 
-import { surepass } from '../../../lib/surepass'
-import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types'
+import { surepass } from '../../../lib/surepass.js'
+import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types.js'
 
 /**
  * PAN verification — single-step via Surepass:

@@ -1,7 +1,7 @@
 // Driving License verification via Surepass — validates DL number and enforces HMV/HTV vehicle class for truck drivers
 
-import { surepass } from '../../../lib/surepass'
-import { KYCLevel, KYCStatus, UserRole, type KYCRequest, type KYCResult } from '../types'
+import { surepass } from '../../../lib/surepass.js'
+import { KYCLevel, KYCStatus, UserRole, type KYCRequest, type KYCResult } from '../types.js'
 
 // Vehicle classes that qualify for freight operations on BharatTruck
 const ALLOWED_VEHICLE_CLASSES = ['HMV', 'HTV', 'HGMV', 'HPMV', 'TRANS'] as const

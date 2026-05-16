@@ -1,7 +1,7 @@
 // Selfie vs Aadhaar photo face-match via Surepass — accepts base64 images, enforces ≥70% similarity threshold
 
-import { surepass } from '../../../lib/surepass'
-import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types'
+import { surepass } from '../../../lib/surepass.js'
+import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types.js'
 
 const FACE_MATCH_THRESHOLD = 70 // percent
 

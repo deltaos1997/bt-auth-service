@@ -1,7 +1,7 @@
 // Email OTP or magic-link verification flow, returns KYCResult confirming email ownership
 
-import { generateOtp } from '../../../lib/otp'
-import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types'
+import { generateOtp } from '../../../lib/otp.js'
+import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types.js'
 
 /**
  * Email verification — two-step:

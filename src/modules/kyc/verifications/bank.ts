@@ -1,7 +1,7 @@
 // Penny drop bank account verification via Surepass — transfers ₹1, confirms name match, returns account validity as KYCResult
 
-import { surepass } from '../../../lib/surepass'
-import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types'
+import { surepass } from '../../../lib/surepass.js'
+import { KYCLevel, KYCStatus, type KYCRequest, type KYCResult } from '../types.js'
 
 /**
  * Bank account verification (penny drop) — single-step via Surepass:
