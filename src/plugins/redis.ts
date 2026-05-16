@@ -7,9 +7,11 @@ declare module 'fastify' {
 }
 
 export const redisPlugin = fp(async (app: FastifyInstance) => {
-  const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+  const url = process.env.REDIS_URL ?? 'redis://localhost:6379'
+  const redis = new Redis(url, {
     maxRetriesPerRequest: 3,
     lazyConnect: true,
+    tls: url.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
   })
   await redis.connect()
   app.decorate('redis', redis)
