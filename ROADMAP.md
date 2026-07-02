@@ -5,16 +5,16 @@
 
 **Role:** Authentication + the truck-derived role model (Driver ↔ Fleet Owner) + KYC gating for every paying actor and every working truck.
 
-**Status legend:** ✅ done · 🟡 partial/in-progress · ⬜ to do · ⛔ stub/blocked
+**Status legend:** ✅ done · 🟡 partial/in-progress · ⬜ to do · ⛔ stub/blocked · `(Wx-y)`/`(D-z)` tags = Entropy PMO work-item refs (auto-synced to the tracker — keep them on the line when you flip a checkbox)
 
 ---
 
 ## ✅ What's done
-- ✅ Custom JWT auth (access + refresh, HS256), refresh-token revocation via Redis.
+- ✅ Custom JWT auth (access + refresh, HS256), refresh-token revocation via Redis. (D-1)
 - ✅ Four auth methods coexist: email+password (bcrypt cost 12), email magic-link, Google OAuth (account-linking by google_sub→email), phone OTP **(skeleton)**.
 - ✅ Redis as source of truth for OTPs, magic-link single-use tokens, OTP rate-limiting (5/hr).
 - ✅ Onboarding routes scaffolded (12 endpoints).
-- ✅ PII crypto helpers: AES-256-GCM for Aadhaar/PAN/bank numbers + SHA-256 `hashForLookup` for duplicate detection.
+- ✅ PII crypto helpers: AES-256-GCM for Aadhaar/PAN/bank numbers + SHA-256 `hashForLookup` for duplicate detection. (D-2)
 - ✅ KYC module structure laid out: 9 verification files (aadhaar, pan, dl, rc, gst, bank, face-match, phone, email), 4-tier level model (L0–L3) designed.
 
 ## ⛔ Stubbed / not functional yet
@@ -25,17 +25,18 @@
 - ⛔ Phone OTP is never sent — only `console.log`'d (no MSG91/Twilio code despite README).
 
 ## ⬜ To do (MVP / P0)
-- ⬜ Implement SurePass calls: **PAN, Aadhaar (v2 two-step OTP), RC/Vahan, DL (enforce HMV/HTV class), bank penny-drop, face-match** (70% threshold, 50–70% → manual review).
-- ⬜ Persist KYC records (JSONB `verifications` on `user_kyc`) + enforce **L0–L3 gating** (booking at L1, payouts at L3).
-- ⬜ **Truck-derived role model:** truck CRUD (add by RC → Vahan verify), 1 truck = Driver, 2+ = Fleet Owner; fully migratable; same person can be both.
-- ⬜ **Fleet ↔ driver affiliation:** fleet owner adds affiliated drivers, assigns a fleet truck to a driver (reflects in driver app). Truck need NOT be in user's name — verify truck authenticity only.
-- ⬜ **Shipper KYC** required only when order value > ₹50,000.
-- ⬜ Wire **MSG91** for real phone OTP.
-- ⬜ Fix `POST /auth/register` silently dropping `truck_type/truck_number/license_number`.
-- ⬜ Add KYC authorization guard (requester == userId or admin).
-- ⬜ Add `ENCRYPTION_KEY` to `.env.example` + README (currently required by code but undocumented → 500 on fresh deploy).
-- ⬜ Reconcile role enums (auth uses `shipper|driver|fleet_owner`; KYC uses `CUSTOMER|DRIVER|FLEET_OPERATOR`).
+- ⬜ Implement SurePass calls: **PAN, Aadhaar (v2 two-step OTP), RC/Vahan, DL (enforce HMV/HTV class), bank penny-drop, face-match** (70% threshold, 50–70% → manual review). (W2-1)
+- ⬜ Persist KYC records (JSONB `verifications` on `user_kyc`) + enforce **L0–L3 gating** (booking at L1, payouts at L3). (W2-2)
+- ⬜ **Truck-derived role model:** truck CRUD (add by RC → Vahan verify), 1 truck = Driver, 2+ = Fleet Owner; fully migratable; same person can be both. (W2-3)
+- ⬜ **Fleet ↔ driver affiliation:** fleet owner adds affiliated drivers, assigns a fleet truck to a driver (reflects in driver app). Truck need NOT be in user's name — verify truck authenticity only. (W2-4)
+- ⬜ **Shipper KYC** required only when order value > ₹50,000. (W2-5)
+- ⬜ Wire **MSG91** for real phone OTP. (W2-6)
+- ⬜ Fix `POST /auth/register` silently dropping `truck_type/truck_number/license_number`. (W1-7)
+- ⬜ Add KYC authorization guard (requester == userId or admin). (W2-7)
+- ⬜ Add `ENCRYPTION_KEY` to `.env.example` + README (currently required by code but undocumented → 500 on fresh deploy). (W1-6)
+- ⬜ Reconcile role enums (auth uses `shipper|driver|fleet_owner`; KYC uses `CUSTOMER|DRIVER|FLEET_OPERATOR`). (W2-8)
 - ⬜ Manual KYC approval is done via **bt-ops-web** console — expose the queue/approve/reject API it needs.
+- ⬜ Onboarding capture: one-time GTA forward-charge election + §194C ≤10-vehicle declaration + AATO tier for HSN. (W2-14)
 
 ## 🔮 Deferred / out of MVP
 - Supabase Auth migration — **keep custom JWT for MVP** (it works); migrate post-pilot.
